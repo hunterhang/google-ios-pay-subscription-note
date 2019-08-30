@@ -17,7 +17,15 @@
 ##### 其它 
 1. 一次性购买，可以购买多次，后台自动累加。
 
-### 一、事件
+### 二、订阅购买（subscription）
+#### 1. 特性票据
+1. Apple 有两种票据，APP 都可以拿得到，一种短票据（约4KB，不会增长，ios6之前的票据），一种长票据（ios6 之后，会无限增长，包含了用户的所有购买记录，几百KB都有可能）；长票据可以根据Appstore的中文文档的描述解开，拿到详细内容，但是过于复杂，一般不这么干。由于长票据太大，云端不容易存储，所以云端只会存储短票据；
+2. Apple 的每一次续费，都会产生一个票据，任何一次票据都可以查询到当前的最新状态；如果当前是最新票据，再/VerifyReceipt 接口会返回receipt_info和receipt 两个字段，一个是json结构，一个base64结构，其实质一样；如果当前票据不是最新票据，则该接口会返回 latest_receipt 和 latest_receipt_info 两个结果；如果当前票据已经过期，则该接口会返回 latest_expires_receipt 和 latest_expires_receipt_info 结构体；
+3. Apple 的票据包括两个关键字段original_transaction_id 和 transaction_id ，分别表示原始订阅ID和当前的子订阅ID；第一次购买时，两个字段值一样的；
+一个Appstore 帐号对某件唯一商品，只有存在一个original_transaction_id；
+4. Apple 首次购买时，用户在AppStore 中无法订阅，只能在应用内购买；一但在应用内订阅以后，用户即可以在appstore 中看到已过期和未过期的订阅，也可以进行续费，如果用户在appstore 中续费，则没有办法调用云端的接口来创建订单号，此时只能通过appstore的通知机制来完成，下文中会讲到。当然，用户在下次打开APP时，会在keychain 中拿到最新的购买票据。
+
+
 ##### 【开通】事件
 1. Apple 
 - 首次订阅，客户端会调用verify接口，后台判断是否为首次购买（original_transaction_id == transaction_id），如果是，则插入一条事件到DB，表示开通事件。
