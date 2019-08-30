@@ -1,4 +1,19 @@
 # 本文描述了google play 和 appstore的订阅支付相关问题
+### 一、一次性购买
+一次性购买的流程比较简单，流程基本相似。
+##### Appstore
+1. 用户点击“购买”；
+2. APP 调用云端接口，创建订单，获取订单ID(order_id)；
+3. APP 调用AppStore的API 完成支付，并获取得到receipt(Apple) 和 purchase_token(GoolePlay)，以前将支付token统称“pay_token”.
+4. APP 将pay_token,order_id，user_id(用户购买前先登录) 发送到云端验证 ；
+5. 云端将pay_token发给平台验证，平台验证pay_token有效后，再根据pay_token来更新order_id的状态；
+6. 云端通知业务方发货，完成一性次购买流程。
+* 注意：在第4步中，用户可以拿到A用户的pay_token，和B用户的order_id 来验证。此时，云端会验证pay_token有效，给B用户发货币了。由于google 有透传字段的机制，可以避免该问题，而apple则没有，需要业务自己做去重，标识该pay_token已经被使用过。
+
+##### Appstore 与 Google Play的不同点
+1. Appstore 的票据非据很长，有4KB左右；Google play的pay_token 只有 256 字节；
+2. Google play 购买物品时，设置一个order_id，购买完成后，调用云端接口验证票据时，可根据pay_token获取购买信息时（/get） 接口时，返回order_id（不一定时order_id，可以设置一个大的字符串）；而AppStore 则不行。 如果有透传字段，则APP完成购买以后，只需要将pay_token发到云端，云端即可知道，对应的order_id。
+
 ### 一、事件
 ##### 【开通】事件
 1. Apple 
