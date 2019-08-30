@@ -19,11 +19,15 @@
 
 ### 二、订阅购买（subscription）
 #### 1. 特性票据
+####【Apple】
 1. Apple 有两种票据，APP 都可以拿得到，一种短票据（约4KB，不会增长，ios6之前的票据），一种长票据（ios6 之后，会无限增长，包含了用户的所有购买记录，几百KB都有可能）；长票据可以根据Appstore的中文文档的描述解开，拿到详细内容，但是过于复杂，一般不这么干。由于长票据太大，云端不容易存储，所以云端只会存储短票据；
 2. Apple 的每一次续费，都会产生一个票据，任何一次票据都可以查询到当前的最新状态；如果当前是最新票据，再/VerifyReceipt 接口会返回receipt_info和receipt 两个字段，一个是json结构，一个base64结构，其实质一样；如果当前票据不是最新票据，则该接口会返回 latest_receipt 和 latest_receipt_info 两个结果；如果当前票据已经过期，则该接口会返回 latest_expires_receipt 和 latest_expires_receipt_info 结构体；
 3. Apple 的票据包括两个关键字段original_transaction_id 和 transaction_id ，分别表示原始订阅ID和当前的子订阅ID；第一次购买时，两个字段值一样的；
 一个Appstore 帐号对某件唯一商品，只有存在一个original_transaction_id；
 4. Apple 首次购买时，用户在AppStore 中无法订阅，只能在应用内购买；一但在应用内订阅以后，用户即可以在appstore 中看到已过期和未过期的订阅，也可以进行续费，如果用户在appstore 中续费，则没有办法调用云端的接口来创建订单号，此时只能通过appstore的通知机制来完成，下文中会讲到。当然，用户在下次打开APP时，会在keychain 中拿到最新的购买票据。
+5. Apple的事件通知中，首次购买，过期，取消，回复购买都有明确的通知，但是续费事件，没有通知，此时，如果业务想要自己平台订单，则无法处理。因此，在用户首次购买时，需要做几件事件：
+1) 存储pay_token; 
+2) 根据pay_token获取订阅信息，获取到expires_time的字段，插入数据库中一个异步任务，在下次（expires_time - 24小时）时，查询该用户的当前状态，如果transaction_id 发生了变化，则表示用户续订了；否则等过期事件（ios 的过期事件时，发过来的是用户状态变化的事件，此时会多一个latest_expires_receipt 字段的通知）。为什么提前24小时查询用户状态？因为ios 会提前24小时开始尝试扣费，直到expries_time 过期 ，则放弃扣费。
 
 
 ##### 【开通】事件
