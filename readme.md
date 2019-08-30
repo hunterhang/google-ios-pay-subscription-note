@@ -1,6 +1,6 @@
-### 本文描述了google play 和 appstore pay 的支付相关问题
-##### 事件
-* 开通
+# 本文描述了google play 和 appstore pay 的支付相关问题
+### 事件
+##### 开通
 1. Apple 
 - 首次订阅，客户端会调用verify接口，后台判断是否为首次购买（original_transaction_id == transaction_id），如果是，则插入一条事件到DB，表示开通事件。
 - 过期后，再次购买（有可能在appstore续费的，不一定走verify接口），后台在收到notice(用户状态变化)后，查询用户的当前状态，如果为过期？而此次的receipt对应的过期时间是在未来？则表示用户重新开通了。此时，插入一条事件到DB，表示开通。
