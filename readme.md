@@ -26,10 +26,22 @@
 一个Appstore 帐号对某件唯一商品，只有存在一个original_transaction_id；
 4. Apple 首次购买时，用户在AppStore 中无法订阅，只能在应用内购买；一但在应用内订阅以后，用户即可以在appstore 中看到已过期和未过期的订阅，也可以进行续费，如果用户在appstore 中续费，则没有办法调用云端的接口来创建订单号，此时只能通过appstore的通知机制来完成，下文中会讲到。当然，用户在下次打开APP时，会在keychain 中拿到最新的购买票据。
 5. Apple的事件通知中，首次购买，过期，取消，回复购买都有明确的通知，但是续费事件，没有通知，此时，如果业务想要自己平台订单，则无法处理。因此，在用户首次购买时，需要做几件事件：
-1) 存储pay_token; 
-2) 根据pay_token获取订阅信息，获取到expires_time的字段，插入数据库中一个异步任务，在下次（expires_time - 24小时）时，查询该用户的当前状态，如果transaction_id 发生了变化，则表示用户续订了；否则等过期事件（ios 的过期事件时，发过来的是用户状态变化的事件，此时会多一个latest_expires_receipt 字段的通知）。为什么提前24小时查询用户状态？因为ios 会提前24小时开始尝试扣费，直到expries_time 过期 ，则放弃扣费。
+- 存储pay_token; 
+- 根据pay_token获取订阅信息，获取到expires_time的字段，插入数据库中一个异步任务，在下次（expires_time - 24小时）时，查询该用户的当前状态，如果transaction_id 发生了变化，则表示用户续订了；否则等过期事件（ios 的过期事件时，发过来的是用户状态变化的事件，此时会多一个latest_expires_receipt 字段的通知）。为什么提前24小时查询用户状态？因为ios 会提前24小时开始尝试扣费，直到expries_time 过期 ，则放弃扣费。
+- Apple 可以没有试用期，而Goole 必须有试用期，试用期是免费的。
+- APP 未通过审核前，无法在appstore中看到需要购买的商品，也无法暂停订阅。因此，为了方便测试，app内的商品，都是云端后台自己控制的，与appstore中配置的保持一致即可；这样，可以让测试人员看到新的商品，而非灰度用户则无法看到。 新商品上线，也是需要官方审核的。
+6. appstore 做订阅事件通知时，只需要配置一个回调URL即可，没有其它特殊操作；
+7 调用/VerifyReceipt 接口时，需要带上password 参数。
 
+####【Google】
+1. Google play的票据不会发生变化的；根据票据可以获取得到order_id，可以分离出父order_id和子order_id ；当用户的订阅已经过期以后，则重新购买，此时父order_id 也会发生变化 ；
+2. Google play 只能在应用内购买商品，在goole play可以暂停订阅等操作，但无法购买商品；在测试时，也可以在google play中看到对应的操作，而appstore则不行；
+3. Google play的事件比较全，其本不需要特殊处理。
+4. Google play在有很多接口，都需要认证，调用时，需要带上access_token。 而获取access_token是通过refresh_token来刷新的，这个通过google 的相关配置可以获取得一以refresh_token和client_id，然后做线程定时刷新即可，refresh_token没有过期时间；
+5. Google play在配置回调地址时，比较麻烦，还需要验证服务的网址合法性。也可以选择jwt_token认证，也是比较复杂，也可以不使用jwt_token认证。
+6. google 还有几个其它的API接口，例如：即款，取消，确认等，业务可根据需要实现。
 
+#### 业务事件的抽象
 ##### 【开通】事件
 1. Apple 
 - 首次订阅，客户端会调用verify接口，后台判断是否为首次购买（original_transaction_id == transaction_id），如果是，则插入一条事件到DB，表示开通事件。
