@@ -1,4 +1,4 @@
-# 本文描述了google play 和 appstore pay 的支付相关问题
+# 本文描述了google play 和 appstore的订阅支付相关问题
 ### 一、事件
 ##### 【开通】事件
 1. Apple 
