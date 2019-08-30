@@ -14,6 +14,9 @@
 1. Appstore 的票据非据很长，有4KB左右；Google play的pay_token 只有 256 字节；
 2. Google play 购买物品时，设置一个order_id，购买完成后，调用云端接口验证票据时，可根据pay_token获取购买信息时（/get） 接口时，返回order_id（不一定时order_id，可以设置一个大的字符串）；而AppStore 则不行。 如果有透传字段，则APP完成购买以后，只需要将pay_token发到云端，云端即可知道，对应的order_id。
 
+##### 其它 
+1. 一次性购买，可以购买多次，后台自动累加。
+
 ### 一、事件
 ##### 【开通】事件
 1. Apple 
